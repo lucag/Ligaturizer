@@ -36,6 +36,12 @@ testpattern:
   | sed -E 's,\\,\\\\,g' \
   | xargs printf '| %6s %6s %6s %6s %6s %6s %6s %6s |\n'
 
+# Build the Ligature source from the fonts/fira submodule.
+# FIRA_BUILD=native uses your own fontmake instead of Fira's Docker image.
+FIRA_BUILD ?= docker
+fira:
+	scripts/build-fira $(FIRA_BUILD)
+
 test:
 	uv run pytest
 
@@ -43,4 +49,4 @@ lint:
 	uv run ruff check
 	uv run ruff format --check
 
-.PHONY: testpattern test lint
+.PHONY: testpattern test lint fira

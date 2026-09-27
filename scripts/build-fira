@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Build the Ligature source: Fira Code's OTFs from the pinned fonts/fira
+# submodule (ADR 0004). Only the OTFs are built; they land in
+# fonts/fira/distr/otf/Fira Code/.
+#
+# usage: scripts/build-fira [docker|native]
+#   docker (default): build inside Fira's own Docker image
+#   native:           run Fira's build script with the fontmake on your PATH
+#
+# Skips the build when the submodule commit matches the last successful build.
+set -o errexit -o nounset -o pipefail
+cd "$(dirname "$0")/.."
+
+mode=${1:-docker}
+fira=fonts/fira
+stamp="$fira/distr/otf/.built-commit"
+commit=$(git -C "$fira" rev-parse HEAD)
+
+if [ -f "$stamp" ] && [ "$(cat "$stamp")" = "$commit" ]; then
+	echo "Fira Code already built at $commit"
+	exit 0
+fi
+
+case "$mode" in
+	docker)
+		# Tag the image by the Dockerfile's content so it's rebuilt when Fira changes it.
+		image="ligaturizer/firacode-build:$(git -C "$fira" rev-parse HEAD:Dockerfile | cut -c1-12)"
+		if ! docker image inspect "$image" >/dev/null 2>&1; then
+			docker build -t "$image" "$fira"
+		fi
+		docker run --rm -v "$PWD/$fira:/opt" "$image" ./script/build_otf.sh
+		;;
+	native)
+		"$fira/script/build_otf.sh"
+		;;
+	*)
+		echo "error: unknown build mode '$mode' (expected docker or native)" >&2
+		exit 1
+		;;
+esac
+
+echo "$commit" > "$stamp"
+echo "Built Fira Code at $commit"
