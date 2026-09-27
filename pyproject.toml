@@ -12,7 +12,11 @@ ligaturize = "ligaturizer.cli:ligaturize"
 ligaturize-all = "ligaturizer.cli:ligaturize_all"
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "uharfbuzz>=0.56.2",
+]
 
 [build-system]
 requires = ["hatchling"]
