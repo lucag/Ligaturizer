@@ -2,6 +2,7 @@
 
 import json
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 from fontTools.ttLib import TTFont
@@ -12,6 +13,9 @@ from ligaturizer.transplant import plan_glyphs, transplant_calt
 
 # Printable ASCII, whose characters must all share the Cell width.
 _ASCII = range(0x21, 0x7F)
+# Advances may differ from the Cell width by this much, a rounding artifact
+# some fonts have (e.g. Roboto Mono: 1229 and 1230).
+_TOLERANCE = 1
 
 
 class NotMonospaced(ValueError):
@@ -73,10 +77,10 @@ def build(
 def cell_width(font: TTFont) -> int:
     """The Input font's Cell width; raises NotMonospaced if it has none."""
     cmap = font.getBestCmap()
-    widths = {font["hmtx"][cmap[c]][0] for c in _ASCII if c in cmap}
-    if len(widths) != 1:
+    widths = Counter(font["hmtx"][cmap[c]][0] for c in _ASCII if c in cmap)
+    if max(widths) - min(widths) > _TOLERANCE:
         raise NotMonospaced(f"printable ASCII has advance widths {sorted(widths)}, not one")
-    return widths.pop()
+    return widths.most_common(1)[0][0]
 
 
 def pick_ligature_source(font: TTFont) -> Path:

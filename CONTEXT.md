@@ -19,7 +19,7 @@ An Input font whose license forbids distributing derivatives; its Output fonts a
 _Avoid_: private font, non-free font
 
 **Cell width**:
-The single advance width shared by every printable ASCII character of an Input font; the unit all transplanted glyphs are fitted to. An Input font without one is not monospaced and is rejected.
+The single advance width shared by every printable ASCII character of an Input font; the unit all transplanted glyphs are fitted to. Advances within 1 unit of each other count as shared (a rounding artifact), and the most common one is the Cell width. An Input font without one is not monospaced and is rejected.
 _Avoid_: emwidth, m-width
 
 **Ligature source**:
