@@ -1,4 +1,4 @@
-# The FontForge stage of the new pipeline: copies glyphs from the Ligature
+# The FontForge stage: copies glyphs from the Ligature
 # source into the Input font, fitted to its Cell width, renames the font and
 # saves it. The uv side then transplants the calt lookups (ADR 0002).
 import json

@@ -34,12 +34,12 @@ def find_fontforge() -> str:
     return found
 
 
-def run_stage(job: dict) -> None:
-    """Run the FontForge stage with `job` (keyword arguments for the stage)."""
+def run_stage(action: str, args: dict) -> None:
+    """Run the FontForge stage's `action` with `args` (its keyword arguments)."""
     fontforge = find_fontforge()
     with tempfile.TemporaryDirectory() as tmp:
         job_file = Path(tmp) / "job.json"
-        job_file.write_text(json.dumps(job))
+        job_file.write_text(json.dumps({"action": action, "args": args}))
         subprocess.run(
             [fontforge, "-lang=py", "-script", str(STAGE_SCRIPT), str(job_file)],
             check=True,

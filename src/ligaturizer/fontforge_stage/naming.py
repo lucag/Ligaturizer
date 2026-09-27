@@ -1,4 +1,4 @@
-# Output font naming, shared by the FontForge stage's actions.
+# Output font naming for the FontForge stage.
 from os import path
 
 COPYRIGHT = """

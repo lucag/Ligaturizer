@@ -27,7 +27,6 @@ Here's a couple examples of the fonts generated: SF Mono & Menlo with ligatures 
 Use automatic mode to easily convert 1 or more font(s).
 
 1.  Put the font(s) you want into `fonts/`.
-1.  Edit `src/ligaturizer/fontforge_stage/ligatures.py` to disable any ligatures you don't want, and/or enable any (non-ligature) characters you want from Fira Code in addition to the ligatures.
 1.  Edit `src/ligaturizer/catalog.py` to add your new font(s) to the `prefixed_fonts` list. It supports globbing, so if (e.g.) you want to ligaturize all the different weights of FooFont you can add `'FooFont*'` to the list.
 1.  Run `make`.
 1.  Retrieve the ligaturized fonts from `fonts/output/`.
@@ -36,7 +35,6 @@ Use automatic mode to easily convert 1 or more font(s).
 ### Manual ###
 
 1.  Move/copy the font you want to ligaturize into `fonts/` (or somewhere else convenient).
-1.  Edit `src/ligaturizer/fontforge_stage/ligatures.py` to disable any ligatures you don't want.
 1.  Run the script:
 
     ```
@@ -56,7 +54,7 @@ Use automatic mode to easily convert 1 or more font(s).
 
 The font weight will be inherited from the original file; the font name will be replaced with whatever you specified in `--output-name`. You can also use `--prefix` instead, in which case the original name will be preserved and whatever you put in `--prefix` will be prepended to it.
 
-`ligaturize` supports some additional command line options to (e.g.) change which font ligatures are copied from or enable copying of individual character glyphs; run `uv run ligaturize --help` to list them.
+`ligaturize` supports some additional command line options to (e.g.) change which font ligatures are copied from; run `uv run ligaturize --help` to list them.
 
 ## Misc. ##
 ### Credit ###

@@ -2,10 +2,12 @@
 
 import sys
 from argparse import ArgumentParser
+from fnmatch import fnmatch
 from glob import glob
 
 from ligaturizer import catalog
-from ligaturizer.fontforge import FontForgeNotFound, run_stage
+from ligaturizer.build import GlyphNameClash, NotMonospaced, build
+from ligaturizer.fontforge import FontForgeNotFound
 
 
 def _parser() -> ArgumentParser:
@@ -26,27 +28,6 @@ def _parser() -> ArgumentParser:
         " weight is picked based on the input font's name.",
     )
     parser.add_argument(
-        "--copy-character-glyphs",
-        action="store_true",
-        help="Copy glyphs for (some) individual characters from the ligature"
-        " font as well. This will result in punctuation that matches the"
-        " ligatures more closely, but may not fit in as well with the rest"
-        " of the font.",
-    )
-    parser.add_argument(
-        "--scale-character-glyphs-threshold",
-        type=float,
-        default=0.1,
-        metavar="THRESHOLD",
-        help="When copying character glyphs, if they differ in width from the"
-        " width of the input font by at least this much, scale them"
-        " horizontally to match the input font even if this noticeably"
-        " changes their aspect ratio. The default (0.1) means to scale if"
-        " they are at least 10%% wider or narrower. A value of 0 will scale"
-        " all copied character glyphs; a value of 2 effectively disables"
-        " character glyph scaling.",
-    )
-    parser.add_argument(
         "--prefix", default="Liga", help="String to prefix the name of the generated font with."
     )
     parser.add_argument(
@@ -54,29 +35,29 @@ def _parser() -> ArgumentParser:
         default="",
         help="Name of the generated font. Completely replaces the original.",
     )
+    parser.add_argument(
+        "--glyph-namespace",
+        default="",
+        metavar="PREFIX",
+        help="Prefix the names of glyphs copied from Fira Code, for input fonts"
+        " that already have glyphs with the same names.",
+    )
     return parser
 
 
-def _run(job: dict) -> None:
+def _run(**kwargs) -> None:
     try:
-        run_stage(job)
-    except FontForgeNotFound as e:
+        build(**kwargs)
+    except (FontForgeNotFound, GlyphNameClash, NotMonospaced) as e:
         sys.exit(f"error: {e}")
 
 
 def ligaturize() -> None:
-    _run(vars(_parser().parse_args()))
+    _run(**vars(_parser().parse_args()))
 
 
 def ligaturize_all() -> None:
-    parser = ArgumentParser(description="Ligaturize every font in the catalogue.")
-    parser.add_argument("--copy-character-glyphs", action="store_true")
-    args = parser.parse_args()
-
-    copy_characters = args.copy_character_glyphs or catalog.COPY_CHARACTER_GLYPHS
-    output_dir = (
-        "fonts/output-with-characters" if args.copy_character_glyphs else catalog.OUTPUT_DIR
-    )
+    ArgumentParser(description="Ligaturize every font in the catalogue.").parse_args()
 
     batches = [(p, catalog.LIGATURIZED_FONT_NAME_PREFIX, None) for p in catalog.prefixed_fonts]
     batches += [(p, None, name) for p, name in catalog.renamed_fonts.items()]
@@ -85,14 +66,11 @@ def ligaturize_all() -> None:
         if not files:
             sys.exit(f"error: pattern {pattern!r} didn't match any files.")
         for input_file in files:
+            namespaces = catalog.glyph_namespaces.items()
             _run(
-                dict(
-                    input_font_file=input_file,
-                    output_dir=output_dir,
-                    ligature_font_file=None,
-                    prefix=prefix,
-                    output_name=name,
-                    copy_character_glyphs=copy_characters,
-                    scale_character_glyphs_threshold=catalog.SCALE_CHARACTER_GLYPHS_THRESHOLD,
-                )
+                input_font_file=input_file,
+                output_dir=catalog.OUTPUT_DIR,
+                prefix=prefix,
+                output_name=name,
+                glyph_namespace=next((ns for p, ns in namespaces if fnmatch(input_file, p)), ""),
             )

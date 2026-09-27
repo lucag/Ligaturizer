@@ -6,18 +6,6 @@
 # For the prefixed_fonts below, what word do we stick in front of the font name?
 LIGATURIZED_FONT_NAME_PREFIX = "Liga"
 
-# Should we copy some individual punctuations characters like &, ~, and <>,
-# as well as ligatures? The full list is in ligatures.py.
-# You can also override this (and OUTPUT_DIR) by passing
-# --copy-character-glyphs to ligaturize-all.
-COPY_CHARACTER_GLYPHS = False
-
-# If copying individual characters, how different in width (relative to the font
-# we're ligaturizing) should they be before we attempt to width-correct them?
-# The default (0.1) means to width-correct if they're +/- 10%. Values >1.0
-# effectively disable this feature.
-SCALE_CHARACTER_GLYPHS_THRESHOLD = 0.1
-
 # Where to put the generated fonts.
 OUTPUT_DIR = "fonts/output/"
 
@@ -65,6 +53,13 @@ renamed_fonts = {
     "fonts/Hermit/*.otf": "Ligamit",
     # UFL
     "fonts/codeface/fonts/ubuntu-mono/*.ttf": "Ubuntu Mono Ligaturized",
+}
+
+#### Fonts with glyphs named like Fira Code's (ADR 0002). ####
+# Glyphs copied into fonts matching these patterns get the prefix in their names.
+
+glyph_namespaces = {
+    "fonts/FantasqueSansMono-*/*": "fira.",
 }
 
 #### Fonts we can't ligaturize. ####

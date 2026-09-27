@@ -19,10 +19,6 @@ def main():
         from glyphs import copy_glyphs
 
         copy_glyphs(**job["args"])
-    elif job["action"] == "legacy":
-        from legacy import ligaturize_font
-
-        ligaturize_font(**job["args"])
     else:
         sys.exit("unknown FontForge stage action {!r}".format(job["action"]))
 
