@@ -1,5 +1,5 @@
 # To build with different settings (e.g. turn on character glyph copying),
-# edit build.py and then "make".
+# edit src/ligaturizer/catalog.py and then "make".
 
 default: without-characters
 
@@ -15,12 +15,12 @@ pack:
 	zip -r -9 -j LigaturizedFontsWithCharacters.zip fonts/output-with-characters/
 
 without-characters:
-	fontforge -lang=py -script build.py 2>&1 \
+	uv run ligaturize-all 2>&1 \
 	| grep -Fv 'This contextual rule applies no lookups.' \
 	| grep -Fv 'Bad device table'
 
 with-characters:
-	fontforge -lang=py -script build.py --copy-character-glyphs 2>&1 \
+	uv run ligaturize-all --copy-character-glyphs 2>&1 \
 	| grep -Fv 'This contextual rule applies no lookups.' \
 	| grep -Fv 'Bad device table'
 
@@ -28,7 +28,7 @@ ligature-list:
 	luajit name2dict.lua < fonts/fira/FiraCode.glyphs
 
 testpattern:
-	grep -F "{   #" ligatures.py \
+	grep -F "{   #" src/ligaturizer/fontforge_stage/ligatures.py \
   | grep -v absent \
   | cut -d'#' -f2 \
   | tr -d ' ' \
@@ -36,4 +36,11 @@ testpattern:
   | sed -E 's,\\,\\\\,g' \
   | xargs printf '| %6s %6s %6s %6s %6s %6s %6s %6s |\n'
 
-.PHONY: testpattern
+test:
+	uv run pytest
+
+lint:
+	uv run ruff check
+	uv run ruff format --check
+
+.PHONY: testpattern test lint

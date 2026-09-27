@@ -186,7 +186,7 @@ target/
 .ipynb_checkpoints
 
 # pyenv
-.python-version
+# .python-version is committed on purpose
 
 # celery beat schedule file
 celerybeat-schedule
