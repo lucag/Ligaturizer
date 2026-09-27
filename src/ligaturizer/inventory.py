@@ -11,6 +11,8 @@ from pathlib import Path
 
 from fontTools.ttLib import TTFont
 
+from ligaturizer.calt import calt_outputs
+
 _PIECE = re.compile(r"^(?P<family>.+)_(start|middle|end)\.seq$")
 # Characters placed next to each Fixed ligature, besides the ligature
 # characters, to exercise the contexts where Fira suppresses a ligature.
@@ -34,7 +36,7 @@ class Inventory:
 
 def read_inventory(ligature_source: Path) -> Inventory:
     font = TTFont(ligature_source)
-    outputs = _calt_outputs(font)
+    outputs = calt_outputs(font)
 
     char_of = {}
     for codepoint, name in sorted(font.getBestCmap().items()):
@@ -107,49 +109,3 @@ def generate_test_strings(
     if coverage is not None:
         strings = [s for s in strings if set(s) <= coverage]
     return list(dict.fromkeys(strings))
-
-
-def _calt_outputs(font: TTFont) -> set[str]:
-    """Glyphs produced by the default calt feature, following nested lookups."""
-    gsub = font["GSUB"].table
-    lookups = gsub.LookupList.Lookup
-    pending = [
-        index
-        for record in gsub.FeatureList.FeatureRecord
-        if record.FeatureTag == "calt"
-        for index in record.Feature.LookupListIndex
-    ]
-    seen: set[int] = set()
-    outputs: set[str] = set()
-    while pending:
-        index = pending.pop()
-        if index in seen:
-            continue
-        seen.add(index)
-        lookup = lookups[index]
-        for subtable in lookup.SubTable:
-            if lookup.LookupType == 7:
-                subtable = subtable.ExtSubTable
-            if hasattr(subtable, "mapping"):  # single or multiple substitution
-                for target in subtable.mapping.values():
-                    outputs.update([target] if isinstance(target, str) else target)
-            elif hasattr(subtable, "ligatures"):
-                outputs.update(lig.LigGlyph for ligs in subtable.ligatures.values() for lig in ligs)
-            elif hasattr(subtable, "alternates"):
-                outputs.update(g for alts in subtable.alternates.values() for g in alts)
-            else:  # contextual: follow the lookups it applies
-                for rule_set in _rule_sets(subtable):
-                    pending.extend(record.LookupListIndex for record in rule_set)
-    return outputs
-
-
-def _rule_sets(subtable):
-    """The substitution-record lists of a (chaining) contextual subtable."""
-    if hasattr(subtable, "SubstLookupRecord"):  # format 3
-        yield subtable.SubstLookupRecord
-    for set_name in ("SubRuleSet", "SubClassSet", "ChainSubRuleSet", "ChainSubClassSet"):
-        for rule_set in getattr(subtable, set_name, None) or []:
-            if rule_set is None:
-                continue
-            for rule in getattr(rule_set, set_name.replace("Set", ""), None) or []:
-                yield rule.SubstLookupRecord
