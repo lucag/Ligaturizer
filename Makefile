@@ -1,39 +1,32 @@
-# To build with different settings (e.g. turn on character glyph copying),
-# edit build.py and then "make".
+# To change which fonts are built, edit src/ligaturizer/catalog.py and then "make".
 
-default: without-characters
-
-all: without-characters with-characters
+default: fonts
 
 clean:
-	rm -rf fonts/output/* fonts/output-with-characters/* Ligaturized*.zip
+	rm -rf fonts/output/* Ligaturized*.zip
 
-release: clean all pack
+release: clean fonts pack
 
 pack:
 	zip -r -9 -j LigaturizedFonts.zip fonts/output/
-	zip -r -9 -j LigaturizedFontsWithCharacters.zip fonts/output-with-characters/
 
-without-characters:
-	fontforge -lang=py -script build.py 2>&1 \
-	| grep -Fv 'This contextual rule applies no lookups.' \
-	| grep -Fv 'Bad device table'
-
-with-characters:
-	fontforge -lang=py -script build.py --copy-character-glyphs 2>&1 \
-	| grep -Fv 'This contextual rule applies no lookups.' \
-	| grep -Fv 'Bad device table'
+fonts:
+	uv run ligaturize-all
 
 ligature-list:
 	luajit name2dict.lua < fonts/fira/FiraCode.glyphs
 
-testpattern:
-	grep -F "{   #" ligatures.py \
-  | grep -v absent \
-  | cut -d'#' -f2 \
-  | tr -d ' ' \
-  | egrep '.' \
-  | sed -E 's,\\,\\\\,g' \
-  | xargs printf '| %6s %6s %6s %6s %6s %6s %6s %6s |\n'
+# Build the Ligature source from the fonts/fira submodule.
+# FIRA_BUILD=native uses your own fontmake instead of Fira's Docker image.
+FIRA_BUILD ?= docker
+fira:
+	scripts/build-fira $(FIRA_BUILD)
 
-.PHONY: testpattern
+test:
+	uv run pytest
+
+lint:
+	uv run ruff check
+	uv run ruff format --check
+
+.PHONY: fonts test lint fira

@@ -1,0 +1,37 @@
+[project]
+name = "ligaturizer"
+version = "0.1.0"
+description = "Add Fira Code's programming ligatures to any monospaced font"
+readme = "README.md"
+license = "GPL-3.0-only"
+requires-python = ">=3.12"
+dependencies = ["fonttools>=4.50"]
+
+[project.scripts]
+ligaturize = "ligaturizer.cli:ligaturize"
+ligaturize-all = "ligaturizer.cli:ligaturize_all"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "uharfbuzz>=0.56.2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+# stat.py is a personal debugging helper, deliberately left untouched.
+extend-exclude = ["fonts", "stat.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/ligaturizer/catalog.py" = ["E501"]

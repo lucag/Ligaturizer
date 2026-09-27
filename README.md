@@ -6,7 +6,7 @@
 
 This script copies the ligatures (glyphs and rendering information) from [Fira Code](https://github.com/tonsky/FiraCode) into any other TrueType or OpenType font. (Note that the ligatures are scale-corrected, but otherwise copied as is from Fira Code; it doesn't create new ligature graphics based on the font you're modifying.)
 
-This repo contains a [Fontforge python script](ligaturize.py) that you can use to add the Fira Code ligatures to any font, as well as submodules for some popular coding fonts and [another script](build.py) for ligaturizing all of them at once.
+This repo contains a Python package with a `ligaturize` command that you can use to add the Fira Code ligatures to any font, as well as submodules for some popular coding fonts and a `ligaturize-all` command for ligaturizing all of them at once.
 
 Pre-ligaturized versions are available under [releases](https://github.com/ToxicFrog/Ligaturizer/releases).
 
@@ -19,7 +19,7 @@ Here's a couple examples of the fonts generated: SF Mono & Menlo with ligatures 
 
 **Using the Fonts**: See the [FiraCode README](https://github.com/tonsky/FiraCode) for a list of supported editors.
 
-**Script**: This script requires FontForge python bindings. For Debian/Ubuntu they are available in `python-fontforge` package. For OpenSUSE and NixOS, they are included in the `fontforge` package. For macOS, they are available via brew (`brew install fontforge`).
+**Script**: The project is managed with [uv](https://docs.astral.sh/uv/); run `uv sync` to set it up. It also requires FontForge, which is run as a separate program: it must be on your `PATH`, or `$FONTFORGE` must point at it. For Debian/Ubuntu it is available in the `fontforge` package; for macOS, via brew (`brew install fontforge`).
 
 ## Using the Script ##
 ### Automatic ###
@@ -27,8 +27,7 @@ Here's a couple examples of the fonts generated: SF Mono & Menlo with ligatures 
 Use automatic mode to easily convert 1 or more font(s).
 
 1.  Put the font(s) you want into `fonts/`.
-1.  Edit `ligatures.py` to disable any ligatures you don't want, and/or enable any (non-ligature) characters you want from Fira Code in addition to the ligatures.
-1.  Edit `build.py` to add your new font(s) to the `prefixed_fonts` list. It supports globbing, so if (e.g.) you want to ligaturize all the different weights of FooFont you can add `'FooFont*'` to the list.
+1.  Edit `src/ligaturizer/catalog.py` to add your new font(s) to the `prefixed_fonts` list. It supports globbing, so if (e.g.) you want to ligaturize all the different weights of FooFont you can add `'FooFont*'` to the list.
 1.  Run `make`.
 1.  Retrieve the ligaturized fonts from `fonts/output/`.
 1.  The output fonts will be renamed with the prefix "Liga".
@@ -36,18 +35,17 @@ Use automatic mode to easily convert 1 or more font(s).
 ### Manual ###
 
 1.  Move/copy the font you want to ligaturize into `fonts/` (or somewhere else convenient).
-1.  Edit `ligatures.py` to disable any ligatures you don't want.
 1.  Run the script:
 
     ```
-    $ fontforge -lang py -script ligaturize.py path/to/input/font.ttf
+    $ uv run ligaturize path/to/input/font.ttf
         --output-dir=path/to/output/dir/ \
         --output-name='Name of Ligaturized Font'
     ```
     e.g.
 
     ```
-    $ fontforge -lang py -script ligaturize.py fonts/Cousine-Regular.ttf
+    $ uv run ligaturize fonts/Cousine-Regular.ttf
         --output-dir='fonts/output/' \
         --output-name='Ligaturized Cousine'
     ```
@@ -56,7 +54,7 @@ Use automatic mode to easily convert 1 or more font(s).
 
 The font weight will be inherited from the original file; the font name will be replaced with whatever you specified in `--output-name`. You can also use `--prefix` instead, in which case the original name will be preserved and whatever you put in `--prefix` will be prepended to it.
 
-`ligatures.py` supports some additional command line options to (e.g.) change which font ligatures are copied from or enable copying of individual character glyphs; run `fontforge -lang=py ligaturize.py --help` to list them.
+`ligaturize` supports some additional command line options to (e.g.) change which font ligatures are copied from; run `uv run ligaturize --help` to list them.
 
 ## Misc. ##
 ### Credit ###
