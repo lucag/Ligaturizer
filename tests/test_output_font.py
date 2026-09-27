@@ -11,6 +11,8 @@ from ligaturizer.inventory import generate_test_strings, read_inventory
 from .shaping import Shaper, mismatches
 
 DEJAVU = "fonts/codeface/fonts/dejavu-sans-mono/DejaVuSansMono.ttf"
+# Its GSUB has only a `hebr` script, so Latin text falls back to DFLT.
+COUSINE = "fonts/codeface/fonts/cousine/Cousine-Regular.ttf"
 FIRA_REGULAR = ligature_source("Regular")
 
 
@@ -54,3 +56,16 @@ def test_transplanted_glyphs_advance_one_cell_width(dejavu):
 
     assert transplanted
     assert {font["hmtx"][g][0] for g in transplanted} == {cell_width}
+
+
+def test_calt_applies_when_the_input_font_has_no_latin_script(tmp_path):
+    shaper = Shaper(ligaturize(COUSINE, tmp_path))
+
+    assert shaper.glyph_names("&&") == ["ampersand.spacer", "ampersand_ampersand.liga"]
+
+
+def test_output_font_compiles_without_fonttools_warnings(dejavu, caplog):
+    font = TTFont(dejavu)
+    font["GSUB"].compile(font)
+
+    assert caplog.records == []

@@ -57,6 +57,7 @@ def transplant_calt(output_file: Path, source_file: Path, copied: dict[str, str]
 class _Renamer:
     def __init__(self, source: TTFont, output: TTFont, copied: dict[str, str]):
         self.copied = copied
+        self.output = output
         self.output_glyph = output.getBestCmap()
         self.source_codepoint = {}
         for codepoint, name in sorted(source.getBestCmap().items()):
@@ -82,11 +83,11 @@ class _Renamer:
 
     def coverage(self, names) -> ot.Coverage | None:
         """A coverage of the renamed glyphs that exist, or None if none do."""
-        glyphs = list(dict.fromkeys(n for n in map(self, names) if n is not None))
+        glyphs = {n for n in map(self, names) if n is not None}
         if not glyphs:
             return None
         coverage = ot.Coverage()
-        coverage.glyphs = glyphs
+        coverage.glyphs = sorted(glyphs, key=self.output.getGlyphID)
         return coverage
 
 
@@ -134,7 +135,9 @@ def _convert_subtable(subtable, rename: _Renamer, new_index: dict[int, int]) -> 
             # One format 3 subtable per rule, in order: same behavior, and the
             # coverage no longer has to stay aligned with the rule sets.
             converted = []
-            for first, rule_set in zip(subtable.Coverage.glyphs, subtable.ChainSubRuleSet):
+            for first, rule_set in zip(
+                subtable.Coverage.glyphs, subtable.ChainSubRuleSet, strict=True
+            ):
                 for rule in rule_set.ChainSubRule if rule_set else []:
                     one = _chain_rule(
                         rename,
@@ -155,7 +158,9 @@ def _convert_subtable(subtable, rename: _Renamer, new_index: dict[int, int]) -> 
 
 def _chain_rule(rename, new_index, backtrack, inputs, lookahead, records):
     """A format 3 chaining rule, or None if some position can no longer match."""
-    coverages = [[rename.coverage(glyphs) for glyphs in part] for part in (backtrack, inputs, lookahead)]
+    coverages = [
+        [rename.coverage(glyphs) for glyphs in part] for part in (backtrack, inputs, lookahead)
+    ]
     if any(c is None for part in coverages for c in part):
         return None
     rule = ot.ChainContextSubst()
@@ -184,13 +189,16 @@ def _replace_calt_feature(gsub, lookup_indices: list[int]) -> None:
         records[i].Feature.LookupListIndex = list(lookup_indices)
         records[i].Feature.LookupCount = len(lookup_indices)
 
-    if not gsub.ScriptList.ScriptRecord:
+    # Text in a script the font doesn't list (often Latin) is shaped with DFLT.
+    scripts = gsub.ScriptList.ScriptRecord
+    if not any(s.ScriptTag == "DFLT" for s in scripts):
         script = ot.ScriptRecord()
         script.ScriptTag = "DFLT"
         script.Script = ot.Script()
         script.Script.DefaultLangSys = _lang_sys()
         script.Script.LangSysRecord = []
-        gsub.ScriptList.ScriptRecord.append(script)
+        scripts.insert(0, script)  # uppercase, so it sorts before every other tag
+        gsub.ScriptList.ScriptCount = len(scripts)
 
     shared = None  # a calt feature for language systems that have none
     for script in gsub.ScriptList.ScriptRecord:
