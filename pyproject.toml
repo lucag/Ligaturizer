@@ -5,7 +5,7 @@ description = "Add Fira Code's programming ligatures to any monospaced font"
 readme = "README.md"
 license = "GPL-3.0-only"
 requires-python = ">=3.12"
-dependencies = ["fonttools>=4.50"]
+dependencies = ["fonttools>=4.50", "uharfbuzz>=0.56.2"]
 
 [project.scripts]
 ligaturize = "ligaturizer.cli:ligaturize"
@@ -15,7 +15,6 @@ ligaturize-all = "ligaturizer.cli:ligaturize_all"
 dev = [
     "pytest>=8",
     "ruff>=0.6",
-    "uharfbuzz>=0.56.2",
 ]
 
 [build-system]

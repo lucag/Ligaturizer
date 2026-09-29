@@ -16,17 +16,25 @@ from fontTools.ttLib.tables import otTables as ot
 from ligaturizer.calt import calt_lookup_indices, calt_outputs, reachable_lookups, subtables
 
 
-def plan_glyphs(source: TTFont, namespace: str = "") -> dict[str, str]:
+def plan_glyphs(
+    source: TTFont, namespace: str = "", exclude: frozenset[int] = frozenset()
+) -> dict[str, str]:
     """Glyphs to copy from the Ligature source: {source name: Output font name}.
 
     These are the unencoded glyphs calt produces: Fixed ligatures, Pieces,
     Spacers and contextual alternates. Encoded ones map to the Input font's own.
     """
     encoded = set(source.getBestCmap().values())
-    return {g: namespace + g for g in sorted(calt_outputs(source)) if g not in encoded}
+    outputs = calt_outputs(source, exclude)
+    return {g: namespace + g for g in sorted(outputs) if g not in encoded}
 
 
-def transplant_calt(output_file: Path, source_file: Path, copied: dict[str, str]) -> set[str]:
+def transplant_calt(
+    output_file: Path,
+    source_file: Path,
+    copied: dict[str, str],
+    exclude: frozenset[int] = frozenset(),
+) -> set[str]:
     """Replace the Output font's calt with the Ligature source's, in place.
 
     Returns the characters the Ligature source's rules mention that the Output
@@ -41,7 +49,7 @@ def transplant_calt(output_file: Path, source_file: Path, copied: dict[str, str]
     gsub = output["GSUB"].table
     source_gsub = source["GSUB"].table
 
-    reach = reachable_lookups(source_gsub)
+    reach = reachable_lookups(source_gsub, exclude)
     new_index = {old: len(gsub.LookupList.Lookup) + i for i, old in enumerate(reach)}
     for old in reach:
         gsub.LookupList.Lookup.append(
@@ -49,7 +57,7 @@ def transplant_calt(output_file: Path, source_file: Path, copied: dict[str, str]
         )
     gsub.LookupList.LookupCount = len(gsub.LookupList.Lookup)
 
-    _replace_calt_feature(gsub, [new_index[i] for i in calt_lookup_indices(source_gsub)])
+    _replace_calt_feature(gsub, [new_index[i] for i in calt_lookup_indices(source_gsub, exclude)])
 
     output.save(output_file)
     return renamer.missing

@@ -83,23 +83,25 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fonttools" },
+    { name = "uharfbuzz" },
 ]
 
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
     { name = "ruff" },
-    { name = "uharfbuzz" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "fonttools", specifier = ">=4.50" }]
+requires-dist = [
+    { name = "fonttools", specifier = ">=4.50" },
+    { name = "uharfbuzz", specifier = ">=0.56.2" },
+]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest", specifier = ">=8" },
     { name = "ruff", specifier = ">=0.6" },
-    { name = "uharfbuzz", specifier = ">=0.56.2" },
 ]
 
 [[package]]

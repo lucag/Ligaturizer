@@ -9,6 +9,7 @@ from ligaturizer import catalog
 from ligaturizer.build import GlyphNameClash, NotMonospaced, build
 from ligaturizer.fira import WEIGHTS
 from ligaturizer.fontforge import FontForgeNotFound
+from ligaturizer.selection import SELECTION_FILE, SelectionError
 
 
 def _parser() -> ArgumentParser:
@@ -54,13 +55,20 @@ def _parser() -> ArgumentParser:
         action="store_true",
         help="List each character Fira Code's rules mention that the input font lacks.",
     )
+    parser.add_argument(
+        "--selection",
+        dest="selection_file",
+        default=str(SELECTION_FILE),
+        metavar="PATH",
+        help="The Ligature selection: ligatures to require or exclude (default: %(default)s).",
+    )
     return parser
 
 
 def _run(**kwargs) -> None:
     try:
         build(**kwargs)
-    except (FontForgeNotFound, GlyphNameClash, NotMonospaced) as e:
+    except (FontForgeNotFound, GlyphNameClash, NotMonospaced, SelectionError) as e:
         sys.exit(f"error: {e}")
 
 

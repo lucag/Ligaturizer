@@ -22,6 +22,10 @@ FIRA_BUILD ?= docker
 fira:
 	scripts/build-fira $(FIRA_BUILD)
 
+# Record the ligatures the pinned Fira Code has; run after moving the fonts/fira pin.
+ligature-snapshot:
+	uv run python -m ligaturizer.selection
+
 test:
 	uv run pytest
 
@@ -29,4 +33,4 @@ lint:
 	uv run ruff check
 	uv run ruff format --check
 
-.PHONY: fonts test lint fira
+.PHONY: fonts test lint fira ligature-snapshot

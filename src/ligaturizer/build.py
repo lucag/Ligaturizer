@@ -11,6 +11,8 @@ from fontTools.ttLib import TTFont
 
 from ligaturizer.fira import ligature_source, nearest_weight
 from ligaturizer.fontforge import run_stage
+from ligaturizer.inventory import read_inventory
+from ligaturizer.selection import SELECTION_FILE, missing_from_snapshot, read_selection, resolve
 from ligaturizer.transplant import plan_glyphs, transplant_calt
 
 # Printable ASCII, whose characters must all share the Cell width.
@@ -39,6 +41,7 @@ def build(
     glyph_namespace: str = "",
     weight: str | None = None,
     verbose: bool = False,
+    selection_file: str | Path = SELECTION_FILE,
 ) -> Path:
     """Ligaturize `input_font_file` into `output_dir`; returns the Output font's path.
 
@@ -53,7 +56,11 @@ def build(
     source_file = Path(
         ligature_font_file or ligature_source(weight or nearest_weight(font["OS/2"].usWeightClass))
     )
-    glyphs = plan_glyphs(TTFont(source_file), glyph_namespace)
+    selection = read_selection(selection_file)
+    excluded, warnings = resolve(selection, source_file)
+    missing = missing_from_snapshot(read_inventory(source_file), selection)
+    warnings += [f"{source_file.name} no longer ligates {t!r}" for t in missing]
+    glyphs = plan_glyphs(TTFont(source_file), glyph_namespace, excluded)
 
     clashes = sorted(set(glyphs.values()) & set(font.getGlyphOrder()))
     if clashes:
@@ -67,6 +74,8 @@ def build(
         family_name = f"{prefix} {family_name}"
 
     print(f"    ...using ligatures from {source_file}")
+    for warning in warnings:
+        print(f"    ...warning: {warning}")
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
         result_file = Path(tmp) / "result.json"
@@ -84,9 +93,9 @@ def build(
         )
         output_file = Path(json.loads(result_file.read_text())["output_file"])
 
-    missing = transplant_calt(output_file, source_file, glyphs)
-    if missing:
-        report_missing(output_file.name, missing, verbose)
+    lacking = transplant_calt(output_file, source_file, glyphs, excluded)
+    if lacking:
+        report_missing(output_file.name, lacking, verbose)
     return output_file
 
 

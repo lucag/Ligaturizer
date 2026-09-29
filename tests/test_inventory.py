@@ -5,8 +5,9 @@ These tests need only fontTools and uharfbuzz, never FontForge.
 
 import uharfbuzz as hb
 
-from ligaturizer.fira import ligature_source
+from ligaturizer.fira import WEIGHTS, ligature_source
 from ligaturizer.inventory import generate_test_strings, read_inventory
+from ligaturizer.selection import missing_from_snapshot, read_selection
 
 FIRA_REGULAR = ligature_source("Regular")
 
@@ -86,3 +87,19 @@ def test_shaping_the_strings_with_fira_reaches_every_ligature_glyph():
         reached.update(font.glyph_to_string(info.codepoint) for info in buf.glyph_infos)
 
     assert inventory.ligature_glyphs - reached == set()
+
+
+def test_test_strings_leave_out_excluded_sequences():
+    strings = generate_test_strings(_inventory(), exclude=("www",))
+
+    assert not [s for s in strings if "www" in s]
+    assert [s for s in strings if "ww" in s]
+
+
+def test_every_fira_weight_has_the_snapshot_ligatures():
+    selection = read_selection()
+
+    for weight in WEIGHTS:
+        assert missing_from_snapshot(read_inventory(ligature_source(weight)), selection) == [], (
+            weight
+        )
