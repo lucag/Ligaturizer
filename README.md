@@ -54,6 +54,8 @@ Use automatic mode to easily convert 1 or more font(s).
 
 The font weight will be inherited from the original file; the font name will be replaced with whatever you specified in `--output-name`. You can also use `--prefix` instead, in which case the original name will be preserved and whatever you put in `--prefix` will be prepended to it.
 
+Ligatures are copied from the Fira Code weight nearest the input font's declared weight (its `usWeightClass`); if that's wrong for your font, pick one with `--weight` (e.g. `--weight Light`).
+
 `ligaturize` supports some additional command line options to (e.g.) change which font ligatures are copied from; run `uv run ligaturize --help` to list them.
 
 ## Misc. ##
