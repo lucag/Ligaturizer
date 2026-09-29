@@ -6,8 +6,14 @@
 # For the prefixed_fonts below, what word do we stick in front of the font name?
 LIGATURIZED_FONT_NAME_PREFIX = "Liga"
 
-# Where to put the generated fonts.
+# Where to put the generated fonts, and the variant that also copies character
+# glyphs from Fira Code (ligaturize-all --copy-character-glyphs).
 OUTPUT_DIR = "fonts/output/"
+OUTPUT_DIR_WITH_CHARACTERS = "fonts/output-with-characters/"
+
+# When copying character glyphs, how different in width (as a fraction of the
+# Input font's Cell width) one must be to be scaled to fit rather than centered.
+SCALE_CHARACTER_GLYPHS_THRESHOLD = 0.1
 
 #### Fonts that should be prefixed with "Liga" when ligaturized. ####
 # Don't put fonts licensed under UFL here, and don't put fonts licensed under

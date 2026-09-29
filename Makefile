@@ -2,16 +2,23 @@
 
 default: fonts
 
-clean:
-	rm -rf fonts/output/* Ligaturized*.zip
+all: fonts with-characters
 
-release: clean fonts pack
+clean:
+	rm -rf fonts/output/* fonts/output-with-characters/* Ligaturized*.zip
+
+release: clean all pack
 
 pack:
 	zip -r -9 -j LigaturizedFonts.zip fonts/output/
+	zip -r -9 -j LigaturizedFontsWithCharacters.zip fonts/output-with-characters/
 
 fonts:
 	uv run ligaturize-all
+
+# The variant that also copies Fira Code's glyphs for the selection's copy_characters.
+with-characters:
+	uv run ligaturize-all --copy-character-glyphs
 
 ligature-list:
 	luajit name2dict.lua < fonts/fira/FiraCode.glyphs
@@ -33,4 +40,4 @@ lint:
 	uv run ruff check
 	uv run ruff format --check
 
-.PHONY: fonts test lint fira ligature-snapshot
+.PHONY: all fonts with-characters test lint fira ligature-snapshot

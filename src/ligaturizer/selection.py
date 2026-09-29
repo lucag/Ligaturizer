@@ -44,13 +44,21 @@ class Selection:
     require: tuple[str, ...] = ()
     # Sequences that must not be ligated.
     exclude: tuple[str, ...] = ()
+    # Characters whose glyphs --copy-character-glyphs takes from the Ligature source.
+    copy_characters: tuple[str, ...] = ()
 
 
 def read_selection(path: Path = SELECTION_FILE) -> Selection:
     data = tomllib.loads(Path(path).read_text())
-    if unknown := set(data) - {"require", "exclude"}:
+    if unknown := set(data) - {"require", "exclude", "copy_characters"}:
         raise SelectionError(f"{path}: unknown keys {sorted(unknown)}")
-    selection = Selection(tuple(data.get("require", [])), tuple(data.get("exclude", [])))
+    selection = Selection(
+        tuple(data.get("require", [])),
+        tuple(data.get("exclude", [])),
+        tuple(data.get("copy_characters", [])),
+    )
+    if long := [c for c in selection.copy_characters if len(c) != 1]:
+        raise SelectionError(f"{path}: copy_characters must be single characters, not {long}")
     if both := sorted(set(selection.require) & set(selection.exclude)):
         raise SelectionError(f"{path}: {both} both required and excluded")
     return selection

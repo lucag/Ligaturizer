@@ -14,3 +14,12 @@ require = []
 # own typography: they lower the dot of i and j after f, and lower l after F,
 # I and T.
 exclude = ["fi", "fj", "Fl", "Il", "Tl"]
+
+# Characters whose glyphs `--copy-character-glyphs` takes from Fira Code, so
+# punctuation matches the ligatures. These generally look good in most fonts;
+# others Fira's ligatures use, such as @ $ ( ) [ ] { } and w, tend to look out
+# of place.
+copy_characters = [
+    "&", "^", "~", "*", "\\", "|", ":", "=", "!", ">",
+    "-", "<", "#", "%", ".", "+", "?", ";", "/", "_",
+]

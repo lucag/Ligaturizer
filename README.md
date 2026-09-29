@@ -32,6 +32,8 @@ Use automatic mode to easily convert 1 or more font(s).
 1.  Retrieve the ligaturized fonts from `fonts/output/`.
 1.  The output fonts will be renamed with the prefix "Liga".
 
+`make with-characters` builds a second variant into `fonts/output-with-characters/`, which also takes Fira Code's glyphs for common punctuation (listed under `copy_characters` in `selection.toml`) so it matches the ligatures more closely. `make release` builds and packs both.
+
 ### Manual ###
 
 1.  Move/copy the font you want to ligaturize into `fonts/` (or somewhere else convenient).
@@ -57,6 +59,8 @@ The font weight will be inherited from the original file; the font name will be 
 Ligatures are copied from the Fira Code weight nearest the input font's declared weight (its `usWeightClass`); if that's wrong for your font, pick one with `--weight` (e.g. `--weight Light`).
 
 Every Fira Code ligature is copied except those excluded in `selection.toml`: by default, Fira's text ligatures (`fi`, `fj`, `Fl`, `Il`, `Tl`), which would override the input font's own typography. Edit it to exclude more, or to `require` ligatures the build must find. `ligature-snapshot.toml` records the ligatures the pinned Fira Code has; after moving the `fonts/fira` pin, run `make ligature-snapshot` to refresh it.
+
+With `--copy-character-glyphs`, `ligaturize` also copies Fira Code's glyphs for the characters listed under `copy_characters` in `selection.toml`. A copied glyph whose width differs from the input font's by 10% or more is scaled to fit, and one closer is centered; `--scale-character-glyphs-threshold` changes that 10%.
 
 `ligaturize` supports some additional command line options to (e.g.) change which font ligatures are copied from; run `uv run ligaturize --help` to list them.
 
