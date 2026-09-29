@@ -2,11 +2,14 @@
 
 import sys
 from argparse import ArgumentParser
-from fnmatch import fnmatch
-from glob import glob
 
-from ligaturizer import catalog
-from ligaturizer.build import GlyphNameClash, NotMonospaced, build
+from ligaturizer.build import (
+    DEFAULT_SCALE_CHARACTER_GLYPHS_THRESHOLD,
+    GlyphNameClash,
+    NotMonospaced,
+    build,
+)
+from ligaturizer.catalog import CATALOGUE_FILE, CatalogueError, read_catalogue
 from ligaturizer.fira import WEIGHTS
 from ligaturizer.fontforge import FontForgeNotFound
 from ligaturizer.selection import SELECTION_FILE, SelectionError
@@ -65,7 +68,7 @@ def _parser() -> ArgumentParser:
     parser.add_argument(
         "--scale-character-glyphs-threshold",
         type=float,
-        default=catalog.SCALE_CHARACTER_GLYPHS_THRESHOLD,
+        default=DEFAULT_SCALE_CHARACTER_GLYPHS_THRESHOLD,
         metavar="THRESHOLD",
         help="When copying character glyphs, scale those whose width differs from the"
         " input font's by at least this fraction horizontally to fit, and center the"
@@ -103,29 +106,31 @@ def ligaturize_all() -> None:
     parser.add_argument(
         "--copy-character-glyphs",
         action="store_true",
-        help="Build the variant that also copies character glyphs, into"
-        f" {catalog.OUTPUT_DIR_WITH_CHARACTERS}.",
+        help="Build the variant that also copies character glyphs, into the catalogue's"
+        " *_with_characters output directories.",
+    )
+    parser.add_argument(
+        "--catalogue",
+        default=str(CATALOGUE_FILE),
+        metavar="PATH",
+        help="The font catalogue to build (default: %(default)s).",
     )
     args = parser.parse_args()
-    output_dir = (
-        catalog.OUTPUT_DIR_WITH_CHARACTERS if args.copy_character_glyphs else catalog.OUTPUT_DIR
-    )
+    try:
+        catalogue = read_catalogue(args.catalogue)
+        builds = catalogue.builds()
+    except CatalogueError as e:
+        sys.exit(f"error: {e}")
+    settings = catalogue.settings
 
-    batches = [(p, catalog.LIGATURIZED_FONT_NAME_PREFIX, None) for p in catalog.prefixed_fonts]
-    batches += [(p, None, name) for p, name in catalog.renamed_fonts.items()]
-    for pattern, prefix, name in batches:
-        files = glob(pattern)
-        if not files:
-            sys.exit(f"error: pattern {pattern!r} didn't match any files.")
-        for input_file in files:
-            namespaces = catalog.glyph_namespaces.items()
-            _run(
-                input_font_file=input_file,
-                output_dir=output_dir,
-                prefix=prefix,
-                output_name=name,
-                glyph_namespace=next((ns for p, ns in namespaces if fnmatch(input_file, p)), ""),
-                verbose=args.verbose,
-                copy_character_glyphs=args.copy_character_glyphs,
-                scale_character_glyphs_threshold=catalog.SCALE_CHARACTER_GLYPHS_THRESHOLD,
-            )
+    for font in builds:
+        _run(
+            input_font_file=font.input_font_file,
+            output_dir=settings.output_dir_for(font.personal, args.copy_character_glyphs),
+            prefix=font.prefix,
+            output_name=font.output_name,
+            glyph_namespace=font.glyph_namespace,
+            verbose=args.verbose,
+            copy_character_glyphs=args.copy_character_glyphs,
+            scale_character_glyphs_threshold=settings.scale_character_glyphs_threshold,
+        )

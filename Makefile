@@ -1,4 +1,5 @@
-# To change which fonts are built, edit src/ligaturizer/catalog.py and then "make".
+# To change which fonts are built, edit fonts.toml and then "make".
+# Personal-use fonts build into fonts/output-personal*/, which pack never includes.
 
 default: fonts
 
@@ -6,6 +7,7 @@ all: fonts with-characters
 
 clean:
 	rm -rf fonts/output/* fonts/output-with-characters/* Ligaturized*.zip
+	rm -rf fonts/output-personal/* fonts/output-personal-with-characters/*
 
 release: clean all pack
 
