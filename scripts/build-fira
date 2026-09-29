@@ -28,7 +28,9 @@ case "$mode" in
 		if ! docker image inspect "$image" >/dev/null 2>&1; then
 			docker build -t "$image" "$fira"
 		fi
-		docker run --rm -v "$PWD/$fira:/opt" "$image" ./script/build_otf.sh
+		# Run as the calling user, so the built files (and the stamp below) are theirs.
+		docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp \
+			-v "$PWD/$fira:/opt" "$image" ./script/build_otf.sh
 		;;
 	native)
 		"$fira/script/build_otf.sh"
