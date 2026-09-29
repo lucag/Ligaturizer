@@ -64,6 +64,10 @@ With `--copy-character-glyphs`, `ligaturize` also copies Fira Code's glyphs for 
 
 `ligaturize` supports some additional command line options to (e.g.) change which font ligatures are copied from; run `uv run ligaturize --help` to list them.
 
+## Testing ##
+
+`make test` builds a representative set of fonts from `fonts.toml`, in both variants, and checks each Output font against Fira Code: it must choose the same glyphs for every generated test string (the Shaping check), and every glyph must keep its advance, with the ones copied from Fira Code exactly one character wide. `make test-catalogue` (`pytest -m slow`) runs the same checks on every font in the catalogue, which takes a while. Tests that build fonts need FontForge and fail without it; the rest run anywhere.
+
 ## Misc. ##
 ### Credit ###
 This script was originally written by [IlyaSkriblovsky](https://github.com/IlyaSkriblovsky) for adding ligatures to DejaVuSans Mono ([dv-code-font](https://github.com/IlyaSkriblovsky/dv-code-font)). [Navid Rojiani](https://github.com/rojiani) made a few changes to generalize the script so that it works for any font. [ToxicFrog](https://github.com/ToxicFrog) has made a large number of contributions.
