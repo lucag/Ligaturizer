@@ -15,10 +15,13 @@ class Shaper:
         for codepoint, name in sorted(cmap.items()):
             self.codepoint_of.setdefault(name, codepoint)
 
-    def glyph_names(self, text: str) -> list[str]:
+    def glyph_names(self, text: str, script: str | None = None) -> list[str]:
+        """Shape `text`, as if written in `script` (an ISO 15924 code) if given."""
         buf = hb.Buffer()
         buf.add_str(text)
         buf.guess_segment_properties()
+        if script:
+            buf.script = script
         hb.shape(self.font, buf)
         return [self.font.glyph_to_string(info.codepoint) for info in buf.glyph_infos]
 

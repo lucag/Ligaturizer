@@ -2,9 +2,11 @@
 
 import json
 import tempfile
+import unicodedata
 from collections import Counter
 from pathlib import Path
 
+from fontTools import unicodedata as ucd
 from fontTools.ttLib import TTFont
 
 from ligaturizer.fira import ligature_source, nearest_weight
@@ -16,6 +18,8 @@ _ASCII = range(0x21, 0x7F)
 # Advances may differ from the Cell width by this much, a rounding artifact
 # some fonts have (e.g. Roboto Mono: 1229 and 1230).
 _TOLERANCE = 1
+# How many script or block groups the dropped-reference summary names.
+_SUMMARY_GROUPS = 5
 
 
 class NotMonospaced(ValueError):
@@ -34,6 +38,7 @@ def build(
     output_name: str | None = None,
     glyph_namespace: str = "",
     weight: str | None = None,
+    verbose: bool = False,
 ) -> Path:
     """Ligaturize `input_font_file` into `output_dir`; returns the Output font's path.
 
@@ -81,8 +86,29 @@ def build(
 
     missing = transplant_calt(output_file, source_file, glyphs)
     if missing:
-        print(f"    ...dropped calt rules for {len(missing)} characters {output_file.name} lacks")
+        report_missing(output_file.name, missing, verbose)
     return output_file
+
+
+def report_missing(font_name: str, missing: set[str], verbose: bool) -> None:
+    """Report characters the Ligature source's calt mentions that the Output font lacks."""
+    groups = Counter(_group(c) for c in missing).most_common()
+    summary = ", ".join(f"{group} {n}" for group, n in groups[:_SUMMARY_GROUPS])
+    if len(groups) > _SUMMARY_GROUPS:
+        summary += ", …"
+    print(f"    ...dropped calt references to {len(missing)} characters {font_name} lacks:")
+    if not verbose:
+        print(f"       {summary} (--verbose lists them)")
+        return
+    print(f"       {summary}")
+    for c in sorted(missing):
+        print(f"       U+{ord(c):04X} {unicodedata.name(c, '<unnamed>')}")
+
+
+def _group(c: str) -> str:
+    """The script `c` belongs to, or its Unicode block when it's shared by many scripts."""
+    script = ucd.script(c)
+    return ucd.block(c) if script in ("Zyyy", "Zinh", "Zzzz") else ucd.script_name(script)
 
 
 def cell_width(font: TTFont) -> int:
