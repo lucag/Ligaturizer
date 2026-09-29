@@ -49,6 +49,11 @@ def _parser() -> ArgumentParser:
         help="Prefix the names of glyphs copied from Fira Code, for input fonts"
         " that already have glyphs with the same names.",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="List each character Fira Code's rules mention that the input font lacks.",
+    )
     return parser
 
 
@@ -64,7 +69,13 @@ def ligaturize() -> None:
 
 
 def ligaturize_all() -> None:
-    ArgumentParser(description="Ligaturize every font in the catalogue.").parse_args()
+    parser = ArgumentParser(description="Ligaturize every font in the catalogue.")
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="List each character Fira Code's rules mention that an input font lacks.",
+    )
+    verbose = parser.parse_args().verbose
 
     batches = [(p, catalog.LIGATURIZED_FONT_NAME_PREFIX, None) for p in catalog.prefixed_fonts]
     batches += [(p, None, name) for p, name in catalog.renamed_fonts.items()]
@@ -80,4 +91,5 @@ def ligaturize_all() -> None:
                 prefix=prefix,
                 output_name=name,
                 glyph_namespace=next((ns for p, ns in namespaces if fnmatch(input_file, p)), ""),
+                verbose=verbose,
             )

@@ -7,6 +7,7 @@ copied glyphs by the name map. References to glyphs the Output font lacks are
 pruned, which is safe because such glyphs can never appear in shaped text.
 """
 
+import copy
 from pathlib import Path
 
 from fontTools.ttLib import TTFont, newTable
@@ -190,12 +191,23 @@ def _replace_calt_feature(gsub, lookup_indices: list[int]) -> None:
         records[i].Feature.LookupCount = len(lookup_indices)
 
     # Text in a script the font doesn't list (often Latin) is shaped with DFLT.
+    # Without one, HarfBuzz falls back to dflt, then latn, so the new DFLT
+    # starts from that script's features to keep them applying.
     scripts = gsub.ScriptList.ScriptRecord
     if not any(s.ScriptTag == "DFLT" for s in scripts):
+        fallback = next(
+            (
+                s.Script.DefaultLangSys
+                for tag in ("dflt", "latn")
+                for s in scripts
+                if s.ScriptTag == tag and s.Script.DefaultLangSys is not None
+            ),
+            None,
+        )
         script = ot.ScriptRecord()
         script.ScriptTag = "DFLT"
         script.Script = ot.Script()
-        script.Script.DefaultLangSys = _lang_sys()
+        script.Script.DefaultLangSys = copy.deepcopy(fallback) if fallback else _lang_sys()
         script.Script.LangSysRecord = []
         scripts.insert(0, script)  # uppercase, so it sorts before every other tag
         gsub.ScriptList.ScriptCount = len(scripts)
