@@ -38,6 +38,14 @@ ligature-snapshot:
 test:
 	uv run pytest
 
+# A Specimen per Output font, beside its Ligature source, in fonts/specimen/.
+specimen:
+	uv run python -m ligaturizer.specimen
+
+# Print the test pattern; `make testpattern` output replaces the table in testpattern.
+testpattern:
+	@uv run python -m ligaturizer.testpattern
+
 # The Shaping and structural checks on every font in the catalogue (slow).
 test-catalogue:
 	uv run pytest -m slow
@@ -46,4 +54,4 @@ lint:
 	uv run ruff check
 	uv run ruff format --check
 
-.PHONY: all fonts with-characters test test-catalogue lint fira ligature-snapshot
+.PHONY: all fonts with-characters specimen testpattern test test-catalogue lint fira ligature-snapshot
