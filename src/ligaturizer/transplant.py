@@ -38,7 +38,8 @@ def transplant_calt(
     """Replace the Output font's calt with the Ligature source's, in place.
 
     Returns the characters the Ligature source's rules mention that the Output
-    font lacks; references to them were dropped.
+    font lacks, or draws with a glyph that stands for another of them;
+    references to them were dropped.
     """
     source = TTFont(source_file)
     output = TTFont(output_file)
@@ -73,6 +74,19 @@ class _Renamer:
             self.source_codepoint.setdefault(name, codepoint)
         self.missing: set[str] = set()
 
+        # When one Output font glyph stands for several of the Ligature
+        # source's characters (e.g. Source Han draws space, carriage return and
+        # no-break space alike), it can only behave like one of them. It stands
+        # for the one most often drawn: printable first, then ASCII.
+        standing_for: dict[str, list[int]] = {}
+        for codepoint in self.source_codepoint.values():
+            if codepoint in self.output_glyph:
+                standing_for.setdefault(self.output_glyph[codepoint], []).append(codepoint)
+        self.stands_for = {
+            glyph: min(codepoints, key=lambda c: (not chr(c).isprintable(), c >= 0x80, c))
+            for glyph, codepoints in standing_for.items()
+        }
+
     def __call__(self, name: str) -> str | None:
         """The Output font's name for a Ligature source glyph, or None if it has none."""
         if name in self.copied:
@@ -80,10 +94,11 @@ class _Renamer:
         codepoint = self.source_codepoint.get(name)
         if codepoint is None:
             return None  # unencoded, and calt never produces it
-        if codepoint not in self.output_glyph:
+        glyph = self.output_glyph.get(codepoint)
+        if glyph is None or self.stands_for[glyph] != codepoint:
             self.missing.add(chr(codepoint))
             return None
-        return self.output_glyph[codepoint]
+        return glyph
 
     def all(self, names) -> list[str] | None:
         """Rename every glyph in a sequence, or None if any is missing."""

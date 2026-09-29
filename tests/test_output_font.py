@@ -20,6 +20,9 @@ DEJAVU = "fonts/codeface/fonts/dejavu-sans-mono/DejaVuSansMono.ttf"
 COUSINE = "fonts/codeface/fonts/cousine/Cousine-Regular.ttf"
 # Double-width CJK glyphs beside a 500-unit Cell width.
 MPLUS = "fonts/codeface/cjk-fonts/mplus1m/mplus-1m-regular.ttf"
+# CID-keyed; the first has 65,535 glyphs, the most a font can hold.
+SOURCE_HAN_SANS_HW = "fonts/codeface/cjk-fonts/source-han-sans-HW/SourceHanSansHW-Regular.otf"
+SOURCE_HAN_CODE_JP = "fonts/codeface/cjk-fonts/source-han-code-JP/SourceHanCodeJP-Regular.otf"
 PLEX_MONO = "fonts/plex/IBM-Plex-Mono/fonts/complete/ttf"
 PLEX_SANS = "fonts/plex/IBM-Plex-Sans/fonts/complete/ttf/IBMPlexSans-Regular.ttf"
 # Its own calt turns `->`, `<-`, `|>` etc. into arrows; its liga makes fi and fl.
@@ -313,3 +316,27 @@ def test_without_the_option_the_input_font_characters_are_untouched(dejavu):
             _glyph(output, char, RecordingPen()).value
             == _glyph(input_font, char, RecordingPen()).value
         ), char
+
+
+def test_a_font_with_no_room_for_the_copied_glyphs_is_rejected(tmp_path):
+    run = run_ligaturize(SOURCE_HAN_SANS_HW, tmp_path / "out")
+
+    assert run.returncode != 0
+    assert "SourceHanSansHW-Regular.otf has 65535 glyphs" in run.stderr
+    assert "Traceback" not in run.stderr
+    assert not (tmp_path / "out").exists()
+
+
+def test_a_cid_keyed_input_font_builds(tmp_path):
+    output = ligaturize(SOURCE_HAN_CODE_JP, tmp_path)
+    input_font, output_font = TTFont(SOURCE_HAN_CODE_JP), TTFont(output)
+    width = cell_width(input_font)
+
+    assert shaping_failures(output, FIRA_REGULAR) == []
+    assert output_font["hmtx"]["ampersand_ampersand.liga"][0] == width
+    # Flattening renames the glyphs but keeps their order.
+    inputs = input_font.getGlyphOrder()
+    outputs = output_font.getGlyphOrder()[: len(inputs)]
+    assert [input_font["hmtx"][g][0] for g in inputs] == [
+        output_font["hmtx"][g][0] for g in outputs
+    ]
