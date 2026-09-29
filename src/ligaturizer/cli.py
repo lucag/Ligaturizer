@@ -7,6 +7,7 @@ from glob import glob
 
 from ligaturizer import catalog
 from ligaturizer.build import GlyphNameClash, NotMonospaced, build
+from ligaturizer.fira import WEIGHTS
 from ligaturizer.fontforge import FontForgeNotFound
 
 
@@ -20,12 +21,18 @@ def _parser() -> ArgumentParser:
         " will be automatically generated based on the input font name and"
         " the --prefix and --output-name flags.",
     )
-    parser.add_argument(
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument(
+        "--weight",
+        choices=list(WEIGHTS),
+        help="The Fira Code weight to copy ligatures from. If unspecified, the weight"
+        " nearest the input font's declared weight (usWeightClass) is picked.",
+    )
+    source.add_argument(
         "--ligature-font-file",
         default="",
         metavar="PATH",
-        help="The file to copy ligatures from. If unspecified, a suitable Fira Code"
-        " weight is picked based on the input font's name.",
+        help="A font file to copy ligatures from, instead of a Fira Code weight.",
     )
     parser.add_argument(
         "--prefix", default="Liga", help="String to prefix the name of the generated font with."

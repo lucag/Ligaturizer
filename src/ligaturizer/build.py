@@ -7,7 +7,7 @@ from pathlib import Path
 
 from fontTools.ttLib import TTFont
 
-from ligaturizer.fira import WEIGHTS, ligature_source
+from ligaturizer.fira import ligature_source, nearest_weight
 from ligaturizer.fontforge import run_stage
 from ligaturizer.transplant import plan_glyphs, transplant_calt
 
@@ -33,10 +33,21 @@ def build(
     prefix: str | None = None,
     output_name: str | None = None,
     glyph_namespace: str = "",
+    weight: str | None = None,
 ) -> Path:
-    """Ligaturize `input_font_file` into `output_dir`; returns the Output font's path."""
+    """Ligaturize `input_font_file` into `output_dir`; returns the Output font's path.
+
+    The Ligature source is `ligature_font_file` if given, else Fira Code's
+    `weight`, else the Fira Code weight nearest the Input font's usWeightClass.
+    """
     font = TTFont(input_font_file)
-    source_file = Path(ligature_font_file or pick_ligature_source(font))
+    try:
+        width = cell_width(font)
+    except NotMonospaced as e:
+        raise NotMonospaced(f"{Path(input_font_file).name} is not monospaced: {e}") from None
+    source_file = Path(
+        ligature_font_file or ligature_source(weight or nearest_weight(font["OS/2"].usWeightClass))
+    )
     glyphs = plan_glyphs(TTFont(source_file), glyph_namespace)
 
     clashes = sorted(set(glyphs.values()) & set(font.getGlyphOrder()))
@@ -61,7 +72,7 @@ def build(
                 output_dir=str(output_dir),
                 ligature_source=str(source_file),
                 glyphs=glyphs,
-                cell_width=cell_width(font),
+                cell_width=width,
                 family_name=family_name,
                 result_file=str(result_file),
             ),
@@ -79,16 +90,8 @@ def cell_width(font: TTFont) -> int:
     cmap = font.getBestCmap()
     widths = Counter(font["hmtx"][cmap[c]][0] for c in _ASCII if c in cmap)
     if max(widths) - min(widths) > _TOLERANCE:
-        raise NotMonospaced(f"printable ASCII has advance widths {sorted(widths)}, not one")
+        raise NotMonospaced(
+            f"printable ASCII has {len(widths)} advance widths,"
+            f" from {min(widths)} to {max(widths)}, not one"
+        )
     return widths.most_common(1)[0][0]
-
-
-def pick_ligature_source(font: TTFont) -> Path:
-    """The Fira Code weight matching the Input font's PostScript name."""
-    name = (font["name"].getDebugName(6) or "").lower()
-    for weight in sorted(WEIGHTS, key=len, reverse=True):
-        if name.endswith("-" + weight.lower()):
-            return ligature_source(weight)
-    if "bold" in name or "heavy" in name:
-        return ligature_source("Bold")
-    return ligature_source("Regular")

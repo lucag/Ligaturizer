@@ -23,7 +23,7 @@ The single advance width shared by every printable ASCII character of an Input f
 _Avoid_: emwidth, m-width
 
 **Ligature source**:
-The weight of Fira Code, as shipped in its built release, that ligatures are taken from for a given Input font.
+The weight of Fira Code, as shipped in its built release, that ligatures are taken from for a given Input font: the one nearest the Input font's declared weight class (`usWeightClass`), ties going to the lighter, unless overridden.
 _Avoid_: Fira font, source font
 
 ### Ligatures

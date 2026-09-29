@@ -21,3 +21,8 @@ def ligature_source(weight: str) -> Path:
     if weight not in WEIGHTS:
         raise ValueError(f"unknown Fira Code weight {weight!r}; expected one of {list(WEIGHTS)}")
     return FIRA_OTF_DIR / f"FiraCode-{weight}.otf"
+
+
+def nearest_weight(weight_class: int) -> str:
+    """The one of Fira Code's WEIGHTS nearest `weight_class`; ties go to the lighter."""
+    return min(WEIGHTS, key=lambda w: (abs(WEIGHTS[w] - weight_class), WEIGHTS[w]))
