@@ -27,7 +27,7 @@ Here's a couple examples of the fonts generated: SF Mono & Menlo with ligatures 
 Use automatic mode to easily convert 1 or more font(s).
 
 1.  Put the font(s) you want into `fonts/`.
-1.  Edit `src/ligaturizer/catalog.py` to add your new font(s) to the `prefixed_fonts` list. It supports globbing, so if (e.g.) you want to ligaturize all the different weights of FooFont you can add `'FooFont*'` to the list.
+1.  Edit `fonts.toml` to add your new font(s) to the `prefixed` list. It supports globbing, so if (e.g.) you want to ligaturize all the different weights of FooFont you can add `"fonts/FooFont*"` to the list. Fonts whose license forbids distributing derivatives go in `personal` instead: they're built into `fonts/output-personal/`, which releases never include.
 1.  Run `make`.
 1.  Retrieve the ligaturized fonts from `fonts/output/`.
 1.  The output fonts will be renamed with the prefix "Liga".

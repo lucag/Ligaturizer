@@ -1,0 +1,80 @@
+# The font catalogue: the Input fonts `ligaturize-all` builds, and its settings.
+# Font entries are glob patterns, relative to the repository root.
+
+#### Fonts that should be prefixed with the name prefix when ligaturized. ####
+# Don't put fonts licensed under UFL here, and don't put fonts licensed under
+# SIL OFL here either unless they haven't specified a Reserved Font Name.
+
+prefixed = [
+    # Apache 2.0 license
+    "fonts/codeface/fonts/cousine/*.ttf",
+    "fonts/codeface/fonts/droid-sans-mono/*.ttf",
+    "fonts/codeface/fonts/meslo/*.ttf",
+    "fonts/codeface/fonts/roboto-mono/*.ttf",
+    # MIT license
+    "fonts/codeface/fonts/dejavu-sans-mono/*.ttf",
+    "fonts/codeface/fonts/hack/*.ttf",
+    # SIL OFL with no Reserved Font Name
+    "fonts/codeface/fonts/edlo/*.ttf",
+    "fonts/codeface/fonts/inconsolata/*.ttf",
+    "fonts/spacemono/fonts/*.ttf",
+]
+
+#### Personal-use fonts. ####
+# Fonts whose licenses forbid distributing derivatives. They're built with the
+# name prefix into the personal-use output directories, which `make pack` and
+# `make release` never include, so they can't be checked into the repo or
+# released. Patterns that match nothing (e.g. a font you don't have) are skipped.
+
+personal = [
+    # Commercial (Hoefler&Co.)
+    "fonts/Operator-Mono/src/Operator Mono/*.otf",
+    # Also commercial or non-derivative; add them if you have them:
+    # "fonts/CamingoCode*",
+    # "fonts/SFMono*",
+]
+
+[settings]
+# The word put in front of the names of prefixed and personal-use fonts.
+name_prefix = "Liga"
+# When copying character glyphs, how different in width (as a fraction of the
+# Input font's Cell width) one must be to be scaled to fit rather than centered.
+scale_character_glyphs_threshold = 0.1
+# Where the Output fonts go: for release, and for personal use only. Each has a
+# variant that also copies character glyphs (ligaturize-all --copy-character-glyphs).
+output_dir = "fonts/output/"
+output_dir_with_characters = "fonts/output-with-characters/"
+personal_output_dir = "fonts/output-personal/"
+personal_output_dir_with_characters = "fonts/output-personal-with-characters/"
+
+#### Fonts that need to be renamed. ####
+# These are fonts that either have name collisions with the prefixed fonts
+# above, or are released under licenses that permit modification only if we
+# change the name of the modified fonts.
+
+[renamed]
+# This doesn't have a reserved name, but if we don't rename it it'll collide
+# with its sibling Fantasque Sans Mono Normal, listed above.
+"fonts/FantasqueSansMono-Normal/*.otf" = "Liga Fantasque Sans Mono"
+"fonts/FantasqueSansMono-Normal/*.ttf" = "Liga Fantasque Sans Mono"
+"fonts/FantasqueSansMono-NoLoopK/*.otf" = "Liga Fantasque Sans Mono NoLoopK"
+"fonts/FantasqueSansMono-NoLoopK/*.ttf" = "Liga Fantasque Sans Mono NoLoopK"
+"fonts/FantasqueSansMono-LargeLineHeight/*.otf" = "Liga Fantasque Sans Mono LargeLineHeight"
+"fonts/FantasqueSansMono-LargeLineHeight/*.ttf" = "Liga Fantasque Sans Mono LargeLineHeight"
+"fonts/FantasqueSansMono-LargeLineHeight-NoLoopK/*.otf" = "Liga Fantasque Sans Mono LargeLineHeight NoLoopK"
+"fonts/FantasqueSansMono-LargeLineHeight-NoLoopK/*.ttf" = "Liga Fantasque Sans Mono LargeLineHeight NoLoopK"
+# SIL OFL with reserved name
+"fonts/codeface/fonts/anonymous-pro/*.ttf" = "Liganymous"
+"fonts/plex/IBM-Plex-Mono/fonts/complete/ttf/*.ttf" = "Ligalex Mono"
+"fonts/codeface/fonts/oxygen-mono/*.otf" = "Liga O2 Mono"
+"fonts/codeface/fonts/source-code-pro/*.ttf" = "LigaSrc Pro"
+"fonts/SourceCodeVariable*" = "LigaSrc Variable"
+"fonts/Hermit/*.otf" = "Ligamit"
+# UFL
+"fonts/codeface/fonts/ubuntu-mono/*.ttf" = "Ubuntu Mono Ligaturized"
+
+#### Fonts with glyphs named like Fira Code's (ADR 0002). ####
+# Glyphs copied into fonts matching these patterns get the prefix in their names.
+
+[glyph_namespaces]
+"fonts/FantasqueSansMono-*/*" = "fira."

@@ -18,6 +18,10 @@ _Avoid_: ligaturized font, result font
 An Input font whose license forbids distributing derivatives; its Output fonts are built locally but never included in a release.
 _Avoid_: private font, non-free font
 
+**Font catalogue**:
+The list of Input fonts `ligaturize-all` builds, with how each is named and whether it's a Personal-use font, plus the batch build settings; kept in `fonts.toml`.
+_Avoid_: font list, catalog.py
+
 **Cell width**:
 The single advance width shared by every printable ASCII character of an Input font; the unit all transplanted glyphs are fitted to. Advances within 1 unit of each other count as shared (a rounding artifact), and the most common one is the Cell width. An Input font without one is not monospaced and is rejected.
 _Avoid_: emwidth, m-width

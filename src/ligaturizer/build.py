@@ -20,6 +20,8 @@ _ASCII = range(0x21, 0x7F)
 # Advances may differ from the Cell width by this much, a rounding artifact
 # some fonts have (e.g. Roboto Mono: 1229 and 1230).
 _TOLERANCE = 1
+# The default for build()'s scale_character_glyphs_threshold.
+DEFAULT_SCALE_CHARACTER_GLYPHS_THRESHOLD = 0.1
 # How many script or block groups the dropped-reference summary names.
 _SUMMARY_GROUPS = 5
 
@@ -43,7 +45,7 @@ def build(
     verbose: bool = False,
     selection_file: str | Path = SELECTION_FILE,
     copy_character_glyphs: bool = False,
-    scale_character_glyphs_threshold: float = 0.1,
+    scale_character_glyphs_threshold: float = DEFAULT_SCALE_CHARACTER_GLYPHS_THRESHOLD,
 ) -> Path:
     """Ligaturize `input_font_file` into `output_dir`; returns the Output font's path.
 
