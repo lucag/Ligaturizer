@@ -21,6 +21,7 @@ _LONGEST_RUN = 10
 _LONGEST_RANDOM = 12
 
 
+# noinspection class-has-no-init
 @dataclass(frozen=True)
 class Inventory:
     # Text of each Fixed ligature -> its glyph name, e.g. "!=" -> "exclam_equal.liga".
@@ -70,6 +71,7 @@ def generate_test_strings(
     inventory: Inventory,
     *,
     coverage: frozenset[str] | set[str] | None = None,
+    exclude: tuple[str, ...] = (),
     seed: int = 0,
     random_count: int = 2000,
 ) -> list[str]:
@@ -78,7 +80,8 @@ def generate_test_strings(
     Covers every Fixed ligature alone and next to each neighbouring character,
     every Sequence ligature family at run lengths 2-10 with each decoration at
     its start, middle and end, and `random_count` random strings from `seed`.
-    Strings with characters outside `coverage` (when given) are dropped.
+    Strings with characters outside `coverage` (when given), and strings
+    containing an `exclude` sequence, are dropped.
     """
     strings = []
 
@@ -108,4 +111,5 @@ def generate_test_strings(
     strings = [s for s in strings if len(s) >= 2]
     if coverage is not None:
         strings = [s for s in strings if set(s) <= coverage]
+    strings = [s for s in strings if not any(x in s for x in exclude)]
     return list(dict.fromkeys(strings))

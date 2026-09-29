@@ -49,8 +49,12 @@ Which glyphs Fira Code's default `calt` feature chooses for a given text; the th
 _Avoid_: ligature definitions, ligature list
 
 **Ligature selection**:
-The short, hand-kept list of ligatures that are explicitly required or excluded on top of the Ligature behavior taken from the Ligature source.
+The short, hand-kept list of ligatures that are explicitly required or excluded on top of the Ligature behavior taken from the Ligature source, kept in `selection.toml`. An exclusion leaves out the whole Fira Code rule that makes it (ADR 0005).
 _Avoid_: ligatures.py, master list
+
+**Ligature snapshot**:
+The generated, committed record of the Fixed ligatures and Sequence ligature families the pinned Ligature source has, kept in `ligature-snapshot.toml`; the build warns about any a Ligature source lacks.
+_Avoid_: lock file, baseline
 
 ### Verification
 

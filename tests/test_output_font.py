@@ -5,8 +5,10 @@ import subprocess
 import pytest
 from fontTools.ttLib import TTFont
 
+from ligaturizer.calt import calt_lookup_indices, lookup_outputs
 from ligaturizer.fira import ligature_source
 from ligaturizer.inventory import generate_test_strings, read_inventory
+from ligaturizer.selection import read_selection
 
 from .shaping import Shaper, mismatches
 
@@ -22,6 +24,7 @@ SPACE_MONO = "fonts/spacemono/fonts/SpaceMono-Regular.ttf"
 # Its own glyphs are named like Fira Code's, e.g. `equal_equal.liga`.
 FANTASQUE = "fonts/FantasqueSansMono-Normal/FantasqueSansMono-Regular.ttf"
 FIRA_REGULAR = ligature_source("Regular")
+SELECTION = read_selection()
 
 
 def run_ligaturize(input_font, output_dir, *args):
@@ -48,7 +51,9 @@ def reported_ligature_source(input_font, output_dir, *args):
 
 def shaping_failures(output, ligature_source, namespace=""):
     coverage = {chr(c) for c in TTFont(output).getBestCmap()}
-    strings = generate_test_strings(read_inventory(ligature_source), coverage=coverage)
+    strings = generate_test_strings(
+        read_inventory(ligature_source), coverage=coverage, exclude=SELECTION.exclude
+    )
     return mismatches(output, ligature_source, strings, namespace)
 
 
@@ -201,3 +206,62 @@ def test_glyph_namespace_prefixes_transplanted_glyphs(tmp_path):
 
     assert shaper.glyph_names("==") == ["fira.equal.spacer", "fira.equal_equal.liga"]
     assert shaping_failures(output, FIRA_REGULAR, namespace="fira.") == []
+
+
+def test_excluded_sequences_are_not_ligated(dejavu):
+    shaper = Shaper(dejavu)
+    encoded = set(TTFont(dejavu).getBestCmap().values())
+
+    assert SELECTION.exclude
+    for text in SELECTION.exclude:
+        assert set(shaper.glyph_names(text)) <= encoded, text
+
+
+def _selection(tmp_path, text):
+    path = tmp_path / "selection.toml"
+    path.write_text(text)
+    return str(path)
+
+
+def test_a_required_ligature_the_ligature_source_lacks_fails_the_build(tmp_path):
+    selection = _selection(tmp_path, 'require = ["&&", "abc"]')
+
+    run = run_ligaturize(DEJAVU, tmp_path / "out", "--selection", selection)
+
+    assert run.returncode != 0
+    assert "doesn't ligate 'abc'" in run.stderr
+
+
+def test_an_exclusion_that_also_removes_other_sequences_fails_the_build(tmp_path):
+    selection = _selection(tmp_path, 'exclude = ["fi"]')
+
+    run = run_ligaturize(DEJAVU, tmp_path / "out", "--selection", selection)
+
+    assert run.returncode != 0
+    for other in ["'fj'", "'Fl'", "'Il'", "'Tl'"]:
+        assert other in run.stderr
+
+
+def test_a_ligature_missing_from_the_snapshot_is_a_warning(tmp_path):
+    # A Fira Code that has lost `&&`, as after moving the pin.
+    fira = TTFont(FIRA_REGULAR)
+    gsub = fira["GSUB"].table
+    lost = {
+        i
+        for i in calt_lookup_indices(gsub)
+        if "ampersand_ampersand.liga" in lookup_outputs(gsub, i)
+    }
+    for record in gsub.FeatureList.FeatureRecord:
+        if record.FeatureTag == "calt":
+            record.Feature.LookupListIndex = [
+                i for i in record.Feature.LookupListIndex if i not in lost
+            ]
+            record.Feature.LookupCount = len(record.Feature.LookupListIndex)
+    fira.save(tmp_path / "FiraCode-Regular.otf")
+
+    run = run_ligaturize(
+        DEJAVU, tmp_path / "out", "--ligature-font-file", str(tmp_path / "FiraCode-Regular.otf")
+    )
+
+    assert run.returncode == 0, run.stderr
+    assert "warning: FiraCode-Regular.otf no longer ligates '&&'" in run.stdout

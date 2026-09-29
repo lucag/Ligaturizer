@@ -5,19 +5,25 @@ from collections.abc import Iterator
 from fontTools.ttLib import TTFont
 
 
-def calt_lookup_indices(gsub) -> list[int]:
-    """Indices of the lookups the calt feature applies directly, in order."""
+def calt_lookup_indices(gsub, exclude: frozenset[int] = frozenset()) -> list[int]:
+    """Indices of the lookups the calt feature applies directly, in order, less `exclude`."""
     indices: list[int] = []
     for record in gsub.FeatureList.FeatureRecord:
         if record.FeatureTag == "calt":
-            indices += [i for i in record.Feature.LookupListIndex if i not in indices]
+            indices += [
+                i for i in record.Feature.LookupListIndex if i not in indices and i not in exclude
+            ]
     return indices
 
 
-def reachable_lookups(gsub) -> list[int]:
-    """calt's lookups plus every lookup its contextual rules apply, sorted."""
+def reachable_lookups(gsub, exclude: frozenset[int] = frozenset()) -> list[int]:
+    """calt's lookups, less `exclude`, plus every lookup their contextual rules apply, sorted."""
+    return sorted(_reachable(gsub, calt_lookup_indices(gsub, exclude)))
+
+
+def _reachable(gsub, start: list[int]) -> set[int]:
     lookups = gsub.LookupList.Lookup
-    pending = calt_lookup_indices(gsub)
+    pending = list(start)
     seen: set[int] = set()
     while pending:
         index = pending.pop()
@@ -27,7 +33,7 @@ def reachable_lookups(gsub) -> list[int]:
         for subtable in subtables(lookups[index]):
             for records in rule_records(subtable):
                 pending.extend(record.LookupListIndex for record in records)
-    return sorted(seen)
+    return seen
 
 
 def subtables(lookup) -> Iterator:
@@ -47,11 +53,20 @@ def rule_records(subtable) -> Iterator[list]:
                 yield rule.SubstLookupRecord
 
 
-def calt_outputs(font: TTFont) -> set[str]:
-    """Glyphs produced by the default calt feature."""
+def calt_outputs(font: TTFont, exclude: frozenset[int] = frozenset()) -> set[str]:
+    """Glyphs produced by the default calt feature, less its lookups in `exclude`."""
     gsub = font["GSUB"].table
+    return _outputs(gsub, reachable_lookups(gsub, exclude))
+
+
+def lookup_outputs(gsub, index: int) -> set[str]:
+    """Glyphs produced by one lookup, including through the lookups its rules apply."""
+    return _outputs(gsub, _reachable(gsub, [index]))
+
+
+def _outputs(gsub, indices) -> set[str]:
     outputs: set[str] = set()
-    for index in reachable_lookups(gsub):
+    for index in indices:
         for subtable in subtables(gsub.LookupList.Lookup[index]):
             if hasattr(subtable, "mapping"):  # single or multiple substitution
                 for target in subtable.mapping.values():

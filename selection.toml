@@ -1,0 +1,16 @@
+# The Ligature selection: ligatures required or excluded on top of the Ligature
+# behavior taken from Fira Code (see CONTEXT.md and docs/adr/0005).
+#
+# Sequences are written as the text they ligate, e.g. "&&" or "<!--".
+
+# Ligatures Fira Code must have. The build fails if one is missing.
+require = []
+
+# Ligatures to leave out. An exclusion leaves out the whole Fira Code rule that
+# makes it; if that rule also makes a sequence not listed here, the build fails
+# and names it.
+#
+# Fira Code's text ligatures, excluded so they don't override the Input font's
+# own typography: they lower the dot of i and j after f, and lower l after F,
+# I and T.
+exclude = ["fi", "fj", "Fl", "Il", "Tl"]

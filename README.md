@@ -56,6 +56,8 @@ The font weight will be inherited from the original file; the font name will be 
 
 Ligatures are copied from the Fira Code weight nearest the input font's declared weight (its `usWeightClass`); if that's wrong for your font, pick one with `--weight` (e.g. `--weight Light`).
 
+Every Fira Code ligature is copied except those excluded in `selection.toml`: by default, Fira's text ligatures (`fi`, `fj`, `Fl`, `Il`, `Tl`), which would override the input font's own typography. Edit it to exclude more, or to `require` ligatures the build must find. `ligature-snapshot.toml` records the ligatures the pinned Fira Code has; after moving the `fonts/fira` pin, run `make ligature-snapshot` to refresh it.
+
 `ligaturize` supports some additional command line options to (e.g.) change which font ligatures are copied from; run `uv run ligaturize --help` to list them.
 
 ## Misc. ##
