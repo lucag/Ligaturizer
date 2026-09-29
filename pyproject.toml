@@ -23,6 +23,9 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# `pytest -m slow` runs the checks on every font in the catalogue.
+addopts = "-m 'not slow'"
+markers = ["slow: runs on every font in the catalogue (pytest -m slow)"]
 
 [tool.ruff]
 line-length = 100

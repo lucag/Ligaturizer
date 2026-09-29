@@ -38,8 +38,12 @@ ligature-snapshot:
 test:
 	uv run pytest
 
+# The Shaping and structural checks on every font in the catalogue (slow).
+test-catalogue:
+	uv run pytest -m slow
+
 lint:
 	uv run ruff check
 	uv run ruff format --check
 
-.PHONY: all fonts with-characters test lint fira ligature-snapshot
+.PHONY: all fonts with-characters test test-catalogue lint fira ligature-snapshot

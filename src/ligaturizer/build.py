@@ -110,10 +110,35 @@ def build(
         )
         output_file = Path(json.loads(result_file.read_text())["output_file"])
 
+    cell_glyphs = set(glyphs.values()) | {font.getBestCmap()[cp] for _, cp in characters}
+    restore_advances(output_file, font, cell_glyphs, width)
     lacking = transplant_calt(output_file, source_file, glyphs, excluded)
     if lacking:
         report_missing(output_file.name, lacking, verbose)
     return output_file
+
+
+def restore_advances(output_file: Path, input_font: TTFont, cell_glyphs: set[str], width: int):
+    """Put back the advances FontForge's save can lose, in place.
+
+    For a fixed-pitch TrueType font, FontForge writes only the first few
+    advances and lets every later glyph share the last one written, assuming
+    that one is a normal glyph after .notdef, .null and nonmarkingreturn. When
+    the Input font has its own zero-width glyph there (Hack and Source Code
+    Pro have one named NULL), every glyph after it advances 0.
+
+    `cell_glyphs` (copied from the Ligature source) advance `width`; every
+    other glyph advances as it does in the Input font.
+    """
+    output = TTFont(output_file)
+    metrics = output["hmtx"].metrics
+    original = input_font["hmtx"].metrics
+    for glyph, (_, lsb) in metrics.items():
+        if glyph in cell_glyphs:
+            metrics[glyph] = (width, lsb)
+        elif glyph in original:
+            metrics[glyph] = (original[glyph][0], lsb)
+    output.save(output_file)
 
 
 def report_missing(font_name: str, missing: set[str], verbose: bool) -> None:
