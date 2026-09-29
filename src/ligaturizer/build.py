@@ -42,11 +42,15 @@ def build(
     weight: str | None = None,
     verbose: bool = False,
     selection_file: str | Path = SELECTION_FILE,
+    copy_character_glyphs: bool = False,
+    scale_character_glyphs_threshold: float = 0.1,
 ) -> Path:
     """Ligaturize `input_font_file` into `output_dir`; returns the Output font's path.
 
     The Ligature source is `ligature_font_file` if given, else Fira Code's
     `weight`, else the Fira Code weight nearest the Input font's usWeightClass.
+    With `copy_character_glyphs`, the selection's copy_characters are also
+    taken from the Ligature source, for those the Input font has.
     """
     font = TTFont(input_font_file)
     try:
@@ -60,7 +64,16 @@ def build(
     excluded, warnings = resolve(selection, source_file)
     missing = missing_from_snapshot(read_inventory(source_file), selection)
     warnings += [f"{source_file.name} no longer ligates {t!r}" for t in missing]
-    glyphs = plan_glyphs(TTFont(source_file), glyph_namespace, excluded)
+    source = TTFont(source_file)
+    glyphs = plan_glyphs(source, glyph_namespace, excluded)
+    characters = []
+    if copy_character_glyphs:
+        input_cmap, source_cmap = font.getBestCmap(), source.getBestCmap()
+        characters = [
+            [source_cmap[ord(c)], ord(c)]
+            for c in selection.copy_characters
+            if ord(c) in input_cmap and ord(c) in source_cmap
+        ]
 
     clashes = sorted(set(glyphs.values()) & set(font.getGlyphOrder()))
     if clashes:
@@ -87,6 +100,8 @@ def build(
                 ligature_source=str(source_file),
                 glyphs=glyphs,
                 cell_width=width,
+                characters=characters,
+                scale_threshold=scale_character_glyphs_threshold,
                 family_name=family_name,
                 result_file=str(result_file),
             ),

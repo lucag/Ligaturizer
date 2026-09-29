@@ -56,6 +56,23 @@ def _parser() -> ArgumentParser:
         help="List each character Fira Code's rules mention that the input font lacks.",
     )
     parser.add_argument(
+        "--copy-character-glyphs",
+        action="store_true",
+        help="Also copy Fira Code's glyphs for the characters listed under copy_characters"
+        " in the Ligature selection. Punctuation then matches the ligatures more closely,"
+        " but may not fit in as well with the rest of the font.",
+    )
+    parser.add_argument(
+        "--scale-character-glyphs-threshold",
+        type=float,
+        default=catalog.SCALE_CHARACTER_GLYPHS_THRESHOLD,
+        metavar="THRESHOLD",
+        help="When copying character glyphs, scale those whose width differs from the"
+        " input font's by at least this fraction horizontally to fit, and center the"
+        " rest. The default (%(default)s) scales those at least 10%% wider or narrower;"
+        " 0 scales all of them, and 2 none.",
+    )
+    parser.add_argument(
         "--selection",
         dest="selection_file",
         default=str(SELECTION_FILE),
@@ -83,7 +100,16 @@ def ligaturize_all() -> None:
         action="store_true",
         help="List each character Fira Code's rules mention that an input font lacks.",
     )
-    verbose = parser.parse_args().verbose
+    parser.add_argument(
+        "--copy-character-glyphs",
+        action="store_true",
+        help="Build the variant that also copies character glyphs, into"
+        f" {catalog.OUTPUT_DIR_WITH_CHARACTERS}.",
+    )
+    args = parser.parse_args()
+    output_dir = (
+        catalog.OUTPUT_DIR_WITH_CHARACTERS if args.copy_character_glyphs else catalog.OUTPUT_DIR
+    )
 
     batches = [(p, catalog.LIGATURIZED_FONT_NAME_PREFIX, None) for p in catalog.prefixed_fonts]
     batches += [(p, None, name) for p, name in catalog.renamed_fonts.items()]
@@ -95,9 +121,11 @@ def ligaturize_all() -> None:
             namespaces = catalog.glyph_namespaces.items()
             _run(
                 input_font_file=input_file,
-                output_dir=catalog.OUTPUT_DIR,
+                output_dir=output_dir,
                 prefix=prefix,
                 output_name=name,
                 glyph_namespace=next((ns for p, ns in namespaces if fnmatch(input_file, p)), ""),
-                verbose=verbose,
+                verbose=args.verbose,
+                copy_character_glyphs=args.copy_character_glyphs,
+                scale_character_glyphs_threshold=catalog.SCALE_CHARACTER_GLYPHS_THRESHOLD,
             )

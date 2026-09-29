@@ -3,8 +3,11 @@
 import subprocess
 
 import pytest
+from fontTools.pens.boundsPen import BoundsPen
+from fontTools.pens.recordingPen import RecordingPen
 from fontTools.ttLib import TTFont
 
+from ligaturizer.build import cell_width
 from ligaturizer.calt import calt_lookup_indices, lookup_outputs
 from ligaturizer.fira import ligature_source
 from ligaturizer.inventory import generate_test_strings, read_inventory
@@ -265,3 +268,48 @@ def test_a_ligature_missing_from_the_snapshot_is_a_warning(tmp_path):
 
     assert run.returncode == 0, run.stderr
     assert "warning: FiraCode-Regular.otf no longer ligates '&&'" in run.stdout
+
+
+def _glyph(font, char, pen):
+    glyphs = font.getGlyphSet()
+    glyphs[font.getBestCmap()[ord(char)]].draw(pen)
+    return pen
+
+
+def _vertical_extent(font, char):
+    _, y_min, _, y_max = _glyph(font, char, BoundsPen(font.getGlyphSet())).bounds
+    return y_min, y_max
+
+
+# DejaVu's copied characters are within 10% of its Cell width, so centered;
+# M+ 1m's are about 20% wider, so scaled.
+@pytest.mark.parametrize("input_font", [DEJAVU, MPLUS], ids=["centered", "scaled"])
+def test_copied_characters_come_from_fira_and_fit_the_cell(tmp_path, input_font):
+    output = TTFont(ligaturize(input_font, tmp_path, "--copy-character-glyphs"))
+    fira = TTFont(FIRA_REGULAR)
+    scale = output["head"].unitsPerEm / fira["head"].unitsPerEm
+    width = cell_width(TTFont(input_font))
+
+    assert SELECTION.copy_characters
+    for char in SELECTION.copy_characters:
+        y_min, y_max = _vertical_extent(fira, char)
+        assert _vertical_extent(output, char) == pytest.approx(
+            (y_min * scale, y_max * scale), abs=1
+        ), char
+        assert output["hmtx"][output.getBestCmap()[ord(char)]][0] == width, char
+
+
+def test_with_characters_variant_matches_fira(tmp_path):
+    output = ligaturize(DEJAVU, tmp_path, "--copy-character-glyphs")
+
+    assert shaping_failures(output, FIRA_REGULAR) == []
+
+
+def test_without_the_option_the_input_font_characters_are_untouched(dejavu):
+    output, input_font = TTFont(dejavu), TTFont(DEJAVU)
+
+    for char in SELECTION.copy_characters:
+        assert (
+            _glyph(output, char, RecordingPen()).value
+            == _glyph(input_font, char, RecordingPen()).value
+        ), char
