@@ -25,6 +25,10 @@ def copy_glyphs(
     replace the Input font's own, width-corrected with `scale_threshold`.
     """
     font = fontforge.open(input_font_file)
+    if font.cidfontname:
+        # FontForge opens a CID-keyed font as separate sub-fonts, so flatten it
+        # into one ordinary font; the Output font isn't CID-keyed.
+        font.cidFlatten()
     update_font_metadata(font, family_name)
 
     source = fontforge.open(ligature_source)

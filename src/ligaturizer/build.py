@@ -34,6 +34,14 @@ class GlyphNameClash(ValueError):
     pass
 
 
+class TooManyGlyphs(ValueError):
+    pass
+
+
+# The most glyphs an OpenType font can hold.
+_MAX_GLYPHS = 65535
+
+
 def build(
     input_font_file: str,
     output_dir: str = ".",
@@ -76,6 +84,13 @@ def build(
             for c in selection.copy_characters
             if ord(c) in input_cmap and ord(c) in source_cmap
         ]
+
+    if font["maxp"].numGlyphs + len(glyphs) > _MAX_GLYPHS:
+        raise TooManyGlyphs(
+            f"{Path(input_font_file).name} has {font['maxp'].numGlyphs} glyphs; adding"
+            f" {len(glyphs)} from {source_file.name} would exceed the {_MAX_GLYPHS}"
+            " an OpenType font can hold"
+        )
 
     clashes = sorted(set(glyphs.values()) & set(font.getGlyphOrder()))
     if clashes:
@@ -128,7 +143,10 @@ def restore_advances(output_file: Path, input_font: TTFont, cell_glyphs: set[str
     Pro have one named NULL), every glyph after it advances 0.
 
     `cell_glyphs` (copied from the Ligature source) advance `width`; every
-    other glyph advances as it does in the Input font.
+    other glyph advances as it does in the Input font. Glyphs are matched by
+    name; a CID-keyed Input font's glyphs are renamed when FontForge flattens
+    it, so they aren't matched, which is safe because CID-keyed fonts are CFF
+    and this only happens to TrueType ones.
     """
     output = TTFont(output_file)
     metrics = output["hmtx"].metrics

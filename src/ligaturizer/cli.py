@@ -7,6 +7,7 @@ from ligaturizer.build import (
     DEFAULT_SCALE_CHARACTER_GLYPHS_THRESHOLD,
     GlyphNameClash,
     NotMonospaced,
+    TooManyGlyphs,
     build,
 )
 from ligaturizer.catalog import CATALOGUE_FILE, CatalogueError, read_catalogue
@@ -88,7 +89,13 @@ def _parser() -> ArgumentParser:
 def _run(**kwargs) -> None:
     try:
         build(**kwargs)
-    except (FontForgeNotFound, GlyphNameClash, NotMonospaced, SelectionError) as e:
+    except (
+        FontForgeNotFound,
+        GlyphNameClash,
+        NotMonospaced,
+        SelectionError,
+        TooManyGlyphs,
+    ) as e:
         sys.exit(f"error: {e}")
 
 
