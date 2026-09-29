@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+      - run: uv sync --locked
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      # The Input fonts the tests build, and Fira Code. Operator Mono is a
+      # Personal-use font, which the catalogue skips when it's missing.
+      - name: Check out the font submodules
+        run: git submodule update --init --depth 1 fonts/fira fonts/codeface fonts/plex fonts/spacemono
+
+      # The Ligature source is built from the pinned fonts/fira (ADR 0004), so
+      # it's cached by that commit: the slow Docker build runs only when the pin moves.
+      - name: Find the Fira Code pin
+        id: fira
+        run: echo "commit=$(git rev-parse HEAD:fonts/fira)" >> "$GITHUB_OUTPUT"
+      - name: Restore the Ligature source
+        id: ligature-source
+        uses: actions/cache@v6
+        with:
+          path: fonts/fira/distr/otf
+          key: ligature-source-${{ steps.fira.outputs.commit }}
+      - name: Build the Ligature source
+        if: steps.ligature-source.outputs.cache-hit != 'true'
+        run: scripts/build-fira docker
+
+      - name: Install FontForge
+        run: sudo apt-get update && sudo apt-get install --yes fontforge
+      - uses: astral-sh/setup-uv@v10.2.0
+      - run: uv sync --locked
+
+      # The representative test set; `pytest -m slow` (the whole catalogue) is left to `make test-catalogue`.
+      - run: uv run pytest
